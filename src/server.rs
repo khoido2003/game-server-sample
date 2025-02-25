@@ -8,7 +8,7 @@ use std::{
 };
 
 use cgmath::Vector2;
-use tokio::{net::UdpSocket, sync::Mutex, time::interval};
+use tokio::{net::UdpSocket, sync::Mutex};
 
 use egui::ahash::{HashMap, HashMapExt};
 use game_server_sample::{generate_color, globals, Player, PlayerId};
@@ -201,6 +201,15 @@ async fn accept_client(
 
         players.insert(client, new_player);
 
+        // First time game startup: Start sending PING message to everyone and start
+        // the game simulation when the first player
+        // connected
+
+        if players.len() == 1 {
+            tokio::spawn(ping_sender(context.clone()));
+            tokio::spawn(simulation_handler(context.clone()));
+        }
+
         ack_msg = Message::Ack(new_player.id, new_player.color).serialize();
     }
 
@@ -266,6 +275,9 @@ pub async fn start_server(port: u16) -> ServerSessionResult {
 
         // Spawn task for listen message
         tokio::spawn(listen_handler(context.clone()));
+
+        // Broadcase message to other client
+        tokio::spawn(broadcast_sender(context.clone(), broadcast_rx));
 
         Ok(()) as ServerSessionResult
     })

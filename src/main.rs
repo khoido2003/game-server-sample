@@ -1,7 +1,12 @@
 use clap::Parser;
 use std::error::Error;
 
+pub mod app;
+pub mod client;
+pub mod fsm;
+pub mod gui;
 pub mod message;
+pub mod renderer;
 pub mod server;
 
 #[derive(Parser)]
@@ -9,6 +14,10 @@ pub mod server;
     about = "Networked multiplayer game demo with client-server architecture. Run with GUI by default in headless server mode."
 )]
 struct Cli {
+    #[arg(
+        long,
+        help = "Starts a server only in headless mode without graphical user interface. Used for creating dedicated servers."
+    )]
     #[arg(long)]
     server_only: bool,
 
@@ -59,5 +68,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         })
     }
 
-    Ok(())
+    // Run graphical client otherwise.
+    app::run_app(&rt)
 }
