@@ -1,7 +1,12 @@
-use std::{collections::HashMap, error::Error, time::Duration};
+use std::{
+    collections::{HashMap, HashSet},
+    error::Error,
+    time::Duration,
+};
 
 use cgmath::{InnerSpace, Vector2};
 
+use egui::ahash::{HashMap, HashSet};
 use game_server_sample::{globals, Player, PlayerId};
 use tokio::task::JoinHandle;
 use winit::{
@@ -81,6 +86,7 @@ impl std::ops::Index<InputEvent> for InputState {
         }
     }
 }
+
 /////////////////////////////////////////////////////////////
 
 impl<'a> App<'a> {
@@ -119,7 +125,7 @@ impl<'a> App<'a> {
             previous_time = current_time;
             lag += elapsed_time;
 
-            let _ = event_loop.pump_app_events(Some(Duration::ZERO), self);
+            let _ = event_loop.pump_app_event(Some(Duration::ZERO), self);
             if matches!(self.state_machine.peek().unwrap(), fsm::State::Quit) {
                 break;
             }
@@ -134,7 +140,7 @@ impl<'a> App<'a> {
 
             self.window.as_ref().unwrap().request_redraw();
         }
-
+        let set = HashSet::new();
         if self.client_session.is_some() {
             self.client_session
                 .as_ref()

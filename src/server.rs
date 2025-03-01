@@ -52,11 +52,11 @@ impl ServerContext {
 
 // Network method
 
-// Receive message from udp
+// Receive message from client
 async fn listen_handler(context: Arc<ServerContext>) {
     loop {
         let mut buf = [0u8; 32];
-        // NOTE: consider using non-blocking I/O UDP
+        // NOTE: consider using non-blocking I/O UDP - match case
         let (len, client) = context.server_socket.recv_from(&mut buf).await.unwrap();
 
         if len > 1 {
@@ -104,7 +104,7 @@ async fn ping_sender(context: Arc<ServerContext>) {
     }
 }
 
-/// Authoritative game update logic simulation
+/// Authoritative game update logic simulation - Game loop
 ///
 /// Required fixed processing, because timing has to be synchronized accross all the connected
 /// clients. A server simulation loop does not need to play "catch-up" like a local game loop does
@@ -206,13 +206,23 @@ async fn accept_client(
         // connected
 
         if players.len() == 1 {
+
+            // Ping the server only the first time to check if the server is working
+            // or not
             tokio::spawn(ping_sender(context.clone()));
+
+            // This onl created one when the server start with 1 user first
+            // connected, after that it just run and update the state to anyone
+            // inside the server
+            // This is the place where keep update the game state to everyone inside
+            // the game with 60fps
             tokio::spawn(simulation_handler(context.clone()));
         }
 
         ack_msg = Message::Ack(new_player.id, new_player.color).serialize();
     }
 
+    // Send ACK message
     context
         .server_socket
         .send_to(ack_msg.as_bytes(), client)
@@ -223,7 +233,7 @@ async fn accept_client(
     Ok(())
 }
 
-// Update position
+// Update user position if they moved
 async fn update_position(
     context: Arc<ServerContext>,
     client: SocketAddr,
@@ -234,7 +244,6 @@ async fn update_position(
         if player_id != player.id {
             return Ok(());
         }
-
         player.pos.x = new_pos.x;
         player.pos.y = new_pos.y;
     }

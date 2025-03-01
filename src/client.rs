@@ -81,6 +81,7 @@ impl ClientSession {
                 if let Ok(Message::Ping) = Message::deserialize(&response) {
                     self.last_ping = std::time::Instant::now();
                 }
+
                 Ok(response)
             }
             Err(e) => Err(e),
